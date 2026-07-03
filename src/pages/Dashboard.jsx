@@ -2,22 +2,8 @@ import { useEffect, useState } from "react"
 import Sidebar from "../components/Sidebar"
 import StatCard from "../components/StatCard"
 import ClientRow from "../components/ClientRow"
-import api from "../services/api"
-
-const mockStats = [
-  { title: "Total Clients", value: 47, subtitle: "All active + inactive", color: "#6C63FF" },
-  { title: "Active This Month", value: 31, subtitle: "66% of total clients", color: "#22c55e" },
-  { title: "At Risk Clients", value: 8, subtitle: "Needs attention", color: "#ef4444" },
-  { title: "Monthly Revenue", value: "$4,200", subtitle: "Across all memberships", color: "#6C63FF" },
-]
-
-const mockAtRiskClients = [
-  { name: "Sarah Mitchell", email: "sarah.mitchell@gmail.com", lastVisit: "3 weeks ago", churnScore: 88 },
-  { name: "Derek Chen", email: "derek.chen@outlook.com", lastVisit: "24 days ago", churnScore: 82 },
-  { name: "James Okafor", email: "james.okafor@yahoo.com", lastVisit: "18 days ago", churnScore: 76 },
-  { name: "Priya Nair", email: "priya.nair@gmail.com", lastVisit: "2 weeks ago", churnScore: 71 },
-  { name: "Monica Reyes", email: "monica.reyes@gmail.com", lastVisit: "16 days ago", churnScore: 65 },
-]
+import Spinner from "../components/Spinner"
+import { getClients } from "../services/api"
 
 const today = new Date().toLocaleDateString("en-US", {
   weekday: "long",
@@ -26,34 +12,90 @@ const today = new Date().toLocaleDateString("en-US", {
   day: "numeric",
 })
 
+function formatDate(value) {
+  if (!value) return "—"
+  const date = new Date(value)
+  if (isNaN(date.getTime())) return value
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+}
+
+function isWithinLast30Days(value) {
+  if (!value) return false
+  const date = new Date(value)
+  if (isNaN(date.getTime())) return false
+  const diffDays = (Date.now() - date.getTime()) / (1000 * 60 * 60 * 24)
+  return diffDays >= 0 && diffDays <= 30
+}
+
 function Dashboard() {
-  const [stats, setStats] = useState(mockStats)
-  const [atRiskClients, setAtRiskClients] = useState(mockAtRiskClients)
+  const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
-  useEffect(() => {
-    let cancelled = false
+  const fetchClients = async () => {
+    try {
+      const response = await getClients()
+      setClients(Array.isArray(response.data) ? response.data : [])
+      setError("")
+    } catch {
+      setError("Could not load dashboard data. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
 
-    async function loadDashboard() {
+  const retryFetchClients = () => {
+    setLoading(true)
+    fetchClients()
+  }
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadInitialClients() {
       try {
-        const response = await api.get("/dashboard")
-        if (!cancelled && response.data) {
-          if (response.data.stats) setStats(response.data.stats)
-          if (response.data.atRiskClients) setAtRiskClients(response.data.atRiskClients)
-        }
+        const response = await getClients()
+        if (ignore) return
+        setClients(Array.isArray(response.data) ? response.data : [])
+        setError("")
       } catch {
-        if (!cancelled) setError("Showing sample data — could not reach the dashboard API.")
+        if (!ignore) setError("Could not load dashboard data. Please try again.")
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!ignore) setLoading(false)
       }
     }
 
-    loadDashboard()
+    loadInitialClients()
     return () => {
-      cancelled = true
+      ignore = true
     }
   }, [])
+
+  const totalClients = clients.length
+  const activeThisMonth = clients.filter((c) => isWithinLast30Days(c.lastVisit)).length
+  const atRiskCount = clients.filter((c) => c.churnScore > 70).length
+
+  const stats = [
+    { title: "Total Clients", value: totalClients, subtitle: "All active + inactive", color: "#6C63FF" },
+    {
+      title: "Active This Month",
+      value: activeThisMonth,
+      subtitle: totalClients ? `${Math.round((activeThisMonth / totalClients) * 100)}% of total clients` : "No clients yet",
+      color: "#22c55e",
+    },
+    { title: "At Risk Clients", value: atRiskCount, subtitle: "Needs attention", color: "#ef4444" },
+    { title: "Monthly Revenue", value: "$4,200", subtitle: "Across all memberships", color: "#6C63FF" },
+  ]
+
+  const atRiskClients = clients
+    .filter((c) => c.churnScore > 70)
+    .sort((a, b) => b.churnScore - a.churnScore)
+    .map((c) => ({
+      name: `${c.firstName} ${c.lastName}`,
+      email: c.email,
+      lastVisit: formatDate(c.lastVisit),
+      churnScore: c.churnScore,
+    }))
 
   return (
     <div className="flex">
@@ -64,27 +106,40 @@ function Dashboard() {
           <span className="text-sm text-gray-400">{today}</span>
         </div>
 
-        {error && (
-          <div className="mb-6 text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-md px-3 py-2">
-            {error}
+        {loading ? (
+          <Spinner />
+        ) : error ? (
+          <div className="text-center py-16">
+            <p className="text-sm text-red-600 mb-3">{error}</p>
+            <button
+              onClick={retryFetchClients}
+              className="text-sm font-medium text-[#6C63FF] hover:text-[#5b52e0]"
+            >
+              Try again
+            </button>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-4 gap-4 mb-8">
+              {stats.map((stat) => (
+                <StatCard key={stat.title} {...stat} />
+              ))}
+            </div>
+
+            <section className="bg-white border border-gray-200 rounded-lg shadow-sm">
+              <div className="px-5 py-4 border-b border-gray-100">
+                <h2 className="text-sm font-semibold text-[#1a1a2e]">At Risk Clients</h2>
+              </div>
+              {atRiskClients.length === 0 ? (
+                <div className="px-5 py-8 text-center text-gray-400 text-sm">
+                  No at-risk clients right now.
+                </div>
+              ) : (
+                atRiskClients.map((client) => <ClientRow key={client.email} client={client} />)
+              )}
+            </section>
+          </>
         )}
-
-        <div className="grid grid-cols-4 gap-4 mb-8">
-          {stats.map((stat) => (
-            <StatCard key={stat.title} {...stat} />
-          ))}
-        </div>
-
-        <section className="bg-white border border-gray-200 rounded-lg shadow-sm">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-[#1a1a2e]">At Risk Clients</h2>
-            {loading && <span className="text-xs text-gray-400">Refreshing…</span>}
-          </div>
-          {atRiskClients.map((client) => (
-            <ClientRow key={client.email} client={client} />
-          ))}
-        </section>
       </main>
     </div>
   )

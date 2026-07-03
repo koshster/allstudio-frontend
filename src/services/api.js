@@ -12,4 +12,20 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+export function getClients() {
+  return api.get("/clients")
+}
+
+export function createClient(clientData) {
+  return api.post("/clients", clientData)
+}
+
+export function updateClient(id, clientData) {
+  return api.put(`/clients/${id}`, clientData)
+}
+
+export function deleteClient(id) {
+  return api.delete(`/clients/${id}`)
+}
+
 export default api
