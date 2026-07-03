@@ -1,6 +1,7 @@
 import { useState } from "react"
 import Sidebar from "../components/Sidebar"
 import Modal from "../components/Modal"
+import Toggle from "../components/Toggle"
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const mockClassTypes = [
@@ -169,17 +170,7 @@ function Classes() {
             </div>
 
             <label className="flex items-center gap-3 cursor-pointer">
-              <span className="relative inline-flex items-center">
-                <input
-                  type="checkbox"
-                  name="active"
-                  checked={form.active}
-                  onChange={handleChange}
-                  className="sr-only peer"
-                />
-                <span className="w-10 h-5 bg-gray-300 peer-checked:bg-[#6C63FF] rounded-full transition-colors" />
-                <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5" />
-              </span>
+              <Toggle checked={form.active} onChange={handleChange} name="active" />
               <span className="text-sm font-medium text-gray-700">Active</span>
             </label>
 

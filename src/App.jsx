@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard"
 import Clients from "./pages/Clients"
 import Classes from "./pages/Classes"
 import Schedule from "./pages/Schedule"
+import Settings from "./pages/Settings"
 import ProtectedRoute from "./components/ProtectedRoute"
 
 function App() {
@@ -39,6 +40,14 @@ function App() {
         element={
           <ProtectedRoute>
             <Schedule />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
           </ProtectedRoute>
         }
       />
