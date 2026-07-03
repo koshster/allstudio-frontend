@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from "react-router-dom"
 import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
 import Clients from "./pages/Clients"
+import Classes from "./pages/Classes"
+import Schedule from "./pages/Schedule"
 import ProtectedRoute from "./components/ProtectedRoute"
 
 function App() {
@@ -21,6 +23,22 @@ function App() {
         element={
           <ProtectedRoute>
             <Clients />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/classes"
+        element={
+          <ProtectedRoute>
+            <Classes />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/schedule"
+        element={
+          <ProtectedRoute>
+            <Schedule />
           </ProtectedRoute>
         }
       />
