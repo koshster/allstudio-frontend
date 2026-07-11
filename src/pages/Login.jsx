@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import api from "../services/api"
+import { login as loginRequest } from "../services/api"
 import { useAuth } from "../context/AuthContext"
 
 function Login() {
@@ -16,7 +16,7 @@ function Login() {
     setError("")
     setLoading(true)
     try {
-      const response = await api.post("/auth/login", { email, password })
+      const response = await loginRequest(email, password)
       login(response.data.token)
       navigate("/dashboard")
     } catch (err) {
