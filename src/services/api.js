@@ -63,4 +63,36 @@ export function recalculateChurn() {
   return api.post("/analytics/recalculate-churn")
 }
 
+export function getClassTypes() {
+  return api.get("/class-types")
+}
+
+export function createClassType(data) {
+  return api.post("/class-types", data)
+}
+
+export function updateClassType(id, data) {
+  return api.put(`/class-types/${id}`, data)
+}
+
+export function deleteClassType(id) {
+  return api.delete(`/class-types/${id}`)
+}
+
+export function getSessions() {
+  return api.get("/sessions")
+}
+
+export function createSession(data) {
+  return api.post("/sessions", data)
+}
+
+export function updateSession(id, data) {
+  return api.put(`/sessions/${id}`, data)
+}
+
+export function deleteSession(id) {
+  return api.delete(`/sessions/${id}`)
+}
+
 export default api
